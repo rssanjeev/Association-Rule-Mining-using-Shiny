@@ -1,4 +1,4 @@
-# Association-Rule-Mining-using-Shiny
+# Association Rule Mining using Shiny App
 Analyze the AdultUCI dataset using arules package and present the findings through a Shiny App
 
 In this report we will be performing Association Rules Mining (ARM) on one of the in-built datasets in R called the __'AdultUCI'__ to predict the income range and the corresponding factors causing the outcome. We will also be experimenting with the algorithm by changing the parameters through a Shiny App, the link to which is provided at the end of this report. (Or feel free to and have fun with the app!)
