@@ -30,3 +30,241 @@ str(data)
 ```{r}
 summary(data)
 ```
+
+##### **Data Exploration & Manipulation:**
+
+##### (a) Missing Values
+
+Now, lets have a look at the distribution of missing values in the dataset.
+```{r}
+sapply(data, function(x) sum(is.na(x)))
+```
+
+Missing values in the dependent variable will be of no use in building the ARM model. Therefore, lets remove all the observations where the dependent variable is *NA*.
+
+```{r}
+data <- data[!is.na(data$income),]
+#sapply(data, function(x) sum(is.na(x)))
+```
+
+In the 'workclass' and 'native-country' variables, we can replace the missing values with the respective mode i.e. 'Private', 'United-States'. But, for the occupation variable, replacing the NA's with any value will skew the data in one direction. Hence, we assign a new value to all the missing values. 
+
+```{r}
+data$workclass[is.na(data$workclass)] <- "Never-worked"
+data$`native-country`[is.na(data$`native-country`)] <- "United-States"
+
+#Creating a new level
+levels(data$occupation)<- c(levels(data$occupation), "Unknown")
+
+#Assigning the new level to the missing values
+data$occupation[is.na(data$occupation)] <- "Unknown"
+```
+
+Let us now confirm the presence of no missing values in the dataset
+```{r}
+sum(is.na(data))
+```
+
+Let us now turn our focus towards duplicate values:
+```{r}
+data <- data[!duplicated(data),]
+```
+
+##### (b) Data Visualization  
+
+Since we have dealt with the missing & duplicate values, let us now visualize the data.
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+ggplot(data, aes(x=age)) + 
+  geom_histogram(color="black", fill="white") + ggtitle("Distribution of Age")+ theme(plot.title = element_text(hjust = 0.5)) + ylab("Count of Age") + xlab("Age")
+```
+
+**Analysis:**  
+As we can see, the strength of young adults is higher. The count is inversely proportional to age.
+
+```{r}
+ggplot(data, aes(x = sex, fill = income)) + geom_bar(position = 'fill') + theme(axis.text.x = element_text(angle = 90, hjust = 1),plot.title = element_text(hjust = 0.5)) + xlab("Sex") + ylab("Ratio") + ggtitle("Sex & Income")
+```
+
+**Analysis:**  
+The proportion of small income is higher in female compared to male. But, in both cases 'Small' income group is the majority.
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+a <- ggplot(data[data$income == "large",], aes( x = `hours-per-week`)) + geom_histogram(color="black", fill="white") + ggtitle("Distribution of Hours-per-Week")+ theme(plot.title = element_text(hjust = 0.5)) + ylab("Count") + xlab("Hours-per-Week - Large Income")
+
+b <- ggplot(data[data$income == "small",], aes( x = `hours-per-week`)) + geom_histogram(color="black", fill="white") + ggtitle("Distribution of Hours-per-Week")+ theme(plot.title = element_text(hjust = 0.5)) + ylab("Count") + xlab("Hours-per-Week - Small Income")
+
+grid.arrange(a,b,nrow = 1)
+```
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+a <- ggplot(data[data$income == "large",], aes( x = `capital-gain`)) + geom_histogram(color="black", fill="white") + ggtitle("Distribution of Capital Gain")+ theme(plot.title = element_text(hjust = 0.5)) + ylab("Count") + xlab("Capital Gain - Large Income")
+
+b <- ggplot(data[data$income == "small",], aes( x = `capital-gain`)) + geom_histogram(color="black", fill="white") + ggtitle("Distribution of Capital Gain")+ theme(plot.title = element_text(hjust = 0.5)) + ylab("Count") + xlab("Capital Gain - Small Income")
+
+grid.arrange(a,b,nrow = 1)
+
+```
+
+**Analysis:**
+For both the 'Capital-gain' and 'Hours-per-week' the distribution is very similar among their 'small' and 'large' income groups.
+```{r}
+a <- ggplot(data, aes(x = income, y = age))+ geom_boxplot() + xlab("Income") + ylab("Age") + ggtitle("Income vs Age") + theme(plot.title = element_text(hjust = 0.5))
+b <- ggplot(data, aes(x = income, y = fnlwgt))+ geom_boxplot() + xlab("Income") + ylab("Final Weight") + ggtitle("Income vs Final Weight") + theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(a,b,nrow = 1)
+```
+
+**Analysis:**  
+ 1. Based on the above boxplot, we can see that the  average age for the small income group is around 34 and for the large income is 43 with some outliers.  
+ 
+ 2. From the second boxplot, we can interpret that both the small and large income groups are distributed in the same 'Final Weight' range. But, we can also see a huge number of outliers in the both the groups. 
+
+```{r}
+a <- ggplot(data, aes(x = `marital-status`, fill = income)) + geom_bar(position = 'fill') + theme(axis.text.x = element_text(angle = 90, hjust = 1),plot.title = element_text(hjust = 0.5)) + xlab("Marital Status") + ylab("Ratio") + ggtitle("Marital Status & Income")
+b <- ggplot(data, aes(x = workclass, fill = income)) + geom_bar(position = 'fill')+ theme(axis.text.x = element_text(angle = 90, hjust = 1),plot.title = element_text(hjust = 0.5)) + xlab("Work Class") + ylab("Ratio") + ggtitle("Workclass & Income")
+grid.arrange(a,b, nrow = 1)
+```
+
+**Analysis:**  
+In both "Marital Status" and "Work Class", small income groups are the majority except a few values like 'Married-AF-spouse' & 'Married-civ-spouse' for 'Marital Status' and 'Self-emp-inc' for 'Work Class'.
+
+
+```{r}
+ggplot(data[data$income == "large",], aes( x = income , fill = occupation))+geom_bar(position = 'fill')+ coord_polar(theta = "y") + ggtitle("Different Occupation with Large Income") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+**Analysis:**
+'Prof-speciality' and 'Exec-managerial' values are the majority in the large income group.
+
+```{r}
+ggplot(data[data$income == "small",], aes( x = income , fill = occupation))+geom_bar(position = 'fill')+ coord_polar(theta = "y") + ggtitle("Different Occupation with Small Income") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+**Analysis:**
+There is no clear majority in the small income group, all the values are almost qually distributed.
+
+##### (c) Data Type Change
+
+Once we're done with the missing vaues, we can start discretizing the integer variables into ordinal categorical variables.  
+
+Before that, first we'll have t convert alll the interger varaibles nto numneric for the discretize function to work.
+
+```{r}
+#Interger to Numeric
+for(i in c(1,3,5,11,12,13)) {data[i] <- lapply(data[i], as.numeric)}
+```
+
+```{r}
+#Discretization
+data$age <- discretize(data$age, method = "frequency", breaks = 3, 
+                       labels = c("young", "adult", "old"), order = T)
+data$fnlwgt <- discretize(data$fnlwgt, method = "frequency", breaks = 5, 
+                          labels = c("lower","low", "medium", "high", "higher"), order = T)
+data$`education-num` <- discretize(data$`education-num`, method = "frequency", breaks = 3, 
+                                   labels = c("low", "medium", "high"), order = T)
+data$`capital-gain` <- discretize(data$`capital-gain`, method = "interval", breaks = 5, 
+                                  labels = c("lower","low", "medium", "high", "higher"), order = T)
+data$`capital-loss` <- discretize(data$`capital-loss`, method = "interval", breaks = 4, 
+                                  labels = c("low", "medium", "high", "higher"), order = T)
+data$`hours-per-week` <- discretize(data$`hours-per-week`, method = "interval", breaks = 5, 
+                                    labels = c("lower","low", "medium", "high", "higher"), order = T)
+```
+
+
+##### **Final Dataset:**
+
+Let us have a look at the structure of the final dataset:  
+```{r}
+str(data)
+```
+
+##### **ARM with default setting:**  
+Since the dataset is ready, let us now first run the default apriori funciton with it. 
+```{r}
+income_rules <- apriori(data=data)
+```
+
+Top 10 rules with the high confidence:  
+```{r}
+inspect(head(sort(income_rules, by='confidence'),5))
+```
+
+Plot:
+```{r, results='hide', message=FALSE, warning=FALSE}
+plot(income_rules)
+```
+
+**Analysis:**  
+From the above plot it is clear that, with decrease in support both the confidence and lift increases. Going forward, lets fine tune the function. 
+
+##### **ARM Fine Tuned:**
+```{r}
+income_rules <- apriori(data=data, parameter=list (supp=0.5,conf =0.5, minlen= 2, maxtime=10, target = "rules"))
+```
+
+Top 10 rules with the high confidence:  
+```{r}
+inspect(head(sort(income_rules, by='confidence'),5))
+```
+
+Plot:
+```{r, results='hide', message=FALSE, warning=FALSE}
+plot(income_rules)
+```
+
+**Analysis:**  
+With the minimum  Suppport and Confidence set to 0.5, we set the minimum rule length to 2 and maximum amount of time allowed to check for subsets to 10 we get 217 rules. Most of which are in to left corner the low support, high confidence and lift area.     
+
+##### **ARM to predict income:**  
+The goal of this assignment is to use the Association Rule Mining to predict the income range. So, let us set the rhs to the values of the income variable and the target to "rules"  
+
+```{r}
+income_rules <- apriori(data=data, parameter=list (supp=0.5,conf =0.5, minlen= 2, maxtime=10, target = "rules"), appearance = list (rhs=c("income=large", "income=small")))
+```
+
+Top 10 rules with the high confidence:  
+```{r}
+inspect(head(sort(income_rules, by='confidence'),5))
+```
+
+Plot:
+```{r, results='hide', message=FALSE, warning=FALSE}
+plot(income_rules)
+```
+
+**Analysis**  
+In this final segment, we are trying to predict the income variable, whether the user falls under the large or small income group, using the other factorrs. For this, we set the 'target' parameter to 'rules' and fix the 'rhs' values to the values of the final dependent variable. As a result, we get 19 rules with the maximum confidence as **0.7978** and the corresponding support and lift are **0.5293** and **1.05**.   
+
+#### **Shiny App:**  
+
+Lets us now play with the apriori rules by changing the parameters. We'll also be inspecting & visualizing the rules on the Shiny App.  
+
+[Click here for the Shiny App](https://saramasa.shinyapps.io/IST_HW1/)
+
+
+##### Refrences:
+[https://towardsdatascience.com/association-rule-mining-in-r-ddf2d044ae50]
+
+[https://www.hackerearth.com/blog/machine-learning/beginners-tutorial-apriori-algorithm-data-mining-r-implementation/]
+
+[http://brooksandrew.github.io/simpleblog/articles/association-rules-explore-app/]
+
+[https://rdrr.io/cran/arules/man/DATAFRAME.html]
+
+[https://shiny.rstudio.com/tutorial/]
+
+[https://shiny.rstudio.com/articles/reactivity-overview.html]
+
+[https://tidyr.tidyverse.org/reference.html]
+
+[https://sebastiansauer.github.io/]
+
+[https://cran.r-project.org/web/packages/egg/vignettes/Ecosystem.html]
+
+[http://www.stat.wisc.edu/~larget/stat302/chap2.pdf]
+
+[https://stackoverflow.com/questions/47752037/pie-chart-with-ggplot2-with-specific-order-and-percentage-annotations]
+
+[http://mathematicalcoffee.blogspot.com/2014/06/ggpie-pie-graphs-in-ggplot2.html]
+
+[https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf]
